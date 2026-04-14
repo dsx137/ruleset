@@ -1,0 +1,58 @@
+name: Template Release
+
+on:
+  workflow_call:
+    inputs:
+      artifact-name:
+        description: Name of the dist artifact to publish
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Publish release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download dist artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.artifact-name }}
+          path: .
+
+      - name: Determine release metadata
+        id: release_meta
+        shell: bash
+        run: |
+          if [[ "${GITHUB_REF}" == refs/heads/release/v* ]]; then
+            tag="${GITHUB_REF#refs/heads/release/}"
+            title="$tag"
+            prerelease=false
+          elif [[ "${GITHUB_REF}" == refs/heads/main ]]; then
+            short_sha="${GITHUB_SHA::7}"
+            tag="snapshot-${short_sha}"
+            title="Snapshot ${short_sha}"
+            prerelease=true
+          else
+            echo "Unsupported ref: ${GITHUB_REF}" >&2
+            exit 1
+          fi
+
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+          echo "title=${title}" >> "$GITHUB_OUTPUT"
+          echo "prerelease=${prerelease}" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.release_meta.outputs.tag }}
+          target_commitish: ${{ github.sha }}
+          name: ${{ steps.release_meta.outputs.title }}
+          prerelease: ${{ steps.release_meta.outputs.prerelease }}
+          files: dist/**/*.mrs
+          fail_on_unmatched_files: true

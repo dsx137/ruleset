@@ -1,0 +1,17 @@
+name: Setup Go and Mage
+description: Set up Go from go.mod, enable module caching, and install Mage
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version-file: go.mod
+        cache: true
+
+    - name: Install Mage
+      shell: bash
+      run: |
+        go install github.com/magefile/mage@latest
+        echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"

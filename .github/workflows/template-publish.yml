@@ -1,0 +1,45 @@
+name: Template Publish
+
+on:
+  workflow_call:
+    inputs:
+      release_tag:
+        description: Release tag name
+        required: true
+        type: string
+      prerelease:
+        description: Whether this is a prerelease
+        required: true
+        type: boolean
+
+jobs:
+  publish:
+    name: Build and publish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup
+        uses: ./.github/actions/setup
+
+      - name: Build distribution
+        shell: bash
+        run: mage -d magefiles build
+
+      - name: Generate changelog
+        id: changelog
+        uses: dsx137/generate-changelog@v1.0.1
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.release_tag }}
+          target_commitish: ${{ github.sha }}
+          name: ${{ inputs.release_tag }}
+          prerelease: ${{ inputs.prerelease }}
+          body: ${{ steps.changelog.outputs.changelog }}
+          files: dist/**/*.mrs
+          fail_on_unmatched_files: true

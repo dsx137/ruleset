@@ -1,0 +1,18 @@
+name: Snapshot
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: snapshot-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    uses: ./.github/workflows/template-publish.yml
+    with:
+      release_tag: ${{ format('snapshot-{0}', github.sha) }}
+      prerelease: true
+    secrets: inherit

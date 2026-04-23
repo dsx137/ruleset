@@ -27,7 +27,7 @@ jobs:
 
       - name: Build distribution
         shell: bash
-        run: mage -d magefiles build
+        run: mage compile
 
       - name: Generate changelog
         id: changelog

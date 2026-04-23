@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/dsx137/ruleset/magefiles/internal/util"
 	P "github.com/metacubex/mihomo/constant/provider"
 	"github.com/metacubex/mihomo/rules/provider"
 )
@@ -69,7 +68,7 @@ func (m *Mihomo) Compile(rules map[Behavior][]string, rawOutputPath string) erro
 		}
 
 		suffix := behaviorSuffix[mihomoBehavior]
-		dst := util.GetOutputPath(rawOutputPath, suffix)
+		dst := rawOutputPath + suffix
 
 		if err := m.convertLines(lines, dst, mihomoBehavior); err != nil {
 			return err

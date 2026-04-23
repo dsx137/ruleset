@@ -1,6 +1,2 @@
-# Domains
 docker.1ms.run
 +.m.daocloud.io
-
-# IPs
-223.5.5.5

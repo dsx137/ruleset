@@ -13,6 +13,6 @@ jobs:
   publish:
     uses: ./.github/workflows/template-publish.yml
     with:
-      release_tag: ${{ format('snapshot-{0}', github.sha) }}
+      release_tag: 'snapshot'
       prerelease: true
     secrets: inherit

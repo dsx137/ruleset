@@ -17,54 +17,85 @@ import (
 
 func init() {
 	slog.SetDefault(logging.New())
+	slog.Info("Initialing...")
+	slog.Info("Initialed...")
 }
 
-func Compile() error {
+func Compile() {
 	compilers := []compiler.Compiler{
 		compiler.NewMihomo(),
 	}
 
 	if err := pipeline.FreshDist(); err != nil {
-		return err
+		slog.Error("Failed to prepare dist directory", "error", err)
+		return
 	}
 
 	sources, err := pipeline.GetSources()
 	if err != nil {
-		return err
+		slog.Error("Failed to get ruleset sources", "error", err)
+		return
 	}
 
 	if len(sources) == 0 {
-		slog.Warn("No .txt ruleset found", "rulesets_dir", filepath.ToSlash(common.PathRuleset))
-		return nil
+		slog.Error("No .txt ruleset found", "rulesets_dir", filepath.ToSlash(common.PathRuleset))
+		return
 	}
 
 	err = util.Parallel(4, func(feed func(func() error)) error {
 		for _, src := range sources {
 			feed(func() error {
-				rel, relErr := filepath.Rel(common.PathRuleset, src)
-				if relErr != nil {
-					rel = src
-				}
-
-				slog.Info("Compiling ruleset", "input", filepath.ToSlash(filepath.Join(common.PathRuleset, rel)))
+				slog.Info("Compiling ruleset", "input", src)
 
 				behaviorRules, warnings, err := compiler.ParseRules(src)
 				if err != nil {
-					return fmt.Errorf("parse %s: %w", filepath.ToSlash(rel), err)
-				}
-
-				rawOutputPath, err := util.GetRawOutputPath(src)
-				if err != nil {
-					return fmt.Errorf("resolve output path for %s: %w", filepath.ToSlash(rel), err)
+					return fmt.Errorf("parse %s: %w", src, err)
 				}
 
 				for _, warning := range warnings {
-					slog.Warn("Skipped unsupported rule line", "input", filepath.ToSlash(filepath.Join(common.PathRuleset, rel)), "reason", warning)
+					slog.Warn("Skipped unsupported rule line", "input", src, "reason", warning)
+				}
+
+				rawOutputPath, err := util.GetRawOutputPath(util.GetRelPath(common.PathRuleset, src))
+				if err != nil {
+					return fmt.Errorf("resolve output path for %s: %w", src, err)
 				}
 
 				for _, cpl := range compilers {
 					if err := cpl.Compile(behaviorRules, rawOutputPath); err != nil {
-						return fmt.Errorf("compile %s: %w", filepath.ToSlash(rel), err)
+						return fmt.Errorf("compile %s: %w", src, err)
+					}
+				}
+				return nil
+			})
+		}
+		for prefix, srcs := range util.GetSrcPrefixMap(sources) {
+			feed(func() error {
+				slog.Info("Compiling rulesets with common prefix", "prefix", prefix, "count", len(srcs))
+				behaviorRules := make(map[compiler.Behavior][]string)
+				for _, src := range srcs {
+					rules, warnings, err := compiler.ParseRules(src)
+					if err != nil {
+						return fmt.Errorf("parse %s: %w", src, err)
+					}
+
+					for _, warning := range warnings {
+						slog.Warn("Skipped unsupported rule line", "input", src, "reason", warning)
+					}
+
+					for behavior, lines := range rules {
+						behaviorRules[behavior] = append(behaviorRules[behavior], lines...)
+					}
+				}
+
+				rawOutputPath, err := util.GetRawOutputPath(prefix)
+				if err != nil {
+					return fmt.Errorf("resolve output path for prefix %s: %w", prefix, err)
+				}
+
+				for _, cpl := range compilers {
+					if err := cpl.Compile(behaviorRules, rawOutputPath); err != nil {
+						return fmt.Errorf("compile prefix %s: %w", prefix, err)
 					}
 				}
 				return nil
@@ -73,36 +104,41 @@ func Compile() error {
 		return nil
 	})
 	if err != nil {
-		return err
+		slog.Error("Failed to compile rulesets", "error", err)
+		return
 	}
 
 	slog.Info("Build completed", "sources", len(sources), "dist_dir", filepath.ToSlash(common.PathDist))
-	return nil
+	return
 }
 
-func Dump(path string) error {
+func Dump(path string) {
 	if strings.TrimSpace(path) == "" {
-		return fmt.Errorf("usage: mage print <path-to-mrs>")
+		slog.Error("Path is required for dump")
+		return
 	}
 
 	items, err := dump.Dump(path)
 	if err != nil {
-		return err
+		slog.Error("Failed to dump ruleset", "error", err)
+		return
 	}
 
 	for _, item := range items {
 		if _, err := fmt.Fprintln(os.Stdout, item); err != nil {
-			return err
+			slog.Error("Failed to write dumped item to stdout", "error", err)
+			return
 		}
 	}
 
-	return nil
+	return
 }
 
-func Clean() error {
+func Clean() {
 	if err := pipeline.CleanDist(); err != nil {
-		return err
+		slog.Error("Failed to clean dist directory", "error", err)
+		return
 	}
 	slog.Info("Cleaned dist directory", "dist_dir", filepath.ToSlash(common.PathDist))
-	return nil
+	return
 }

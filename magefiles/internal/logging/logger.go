@@ -13,6 +13,7 @@ func New() *slog.Logger {
 		Level:      slog.LevelInfo,
 		TimeFormat: time.DateTime,
 		NoColor:    os.Getenv("NO_COLOR") != "" || os.Getenv("CI") != "",
+		//AddSource:  true,
 	})
 
 	return slog.New(handler)

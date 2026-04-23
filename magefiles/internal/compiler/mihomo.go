@@ -2,7 +2,6 @@ package compiler
 
 import (
 	"fmt"
-	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -31,7 +30,7 @@ var behaviorSuffix = map[P.RuleBehavior]string{
 	P.IPCIDR: "_ipcidr.mrs",
 }
 
-func (m *Mihomo) Compile(src string, rawOutputPath string, rules map[Behavior][]string) error {
+func (m *Mihomo) Compile(rules map[Behavior][]string, rawOutputPath string) error {
 	totalRules := 0
 	mihomoRules := map[P.RuleBehavior][]string{
 		P.Domain: make([]string, 0),
@@ -56,14 +55,11 @@ func (m *Mihomo) Compile(src string, rawOutputPath string, rules map[Behavior][]
 	}
 
 	if len(unknownBehaviors) > 0 {
-		for _, b := range unknownBehaviors {
-			slog.Warn("Unknown behavior type, skipping rules", "input", filepath.ToSlash(src), "behavior", b)
-		}
+		return fmt.Errorf("unknown behaviors found in rules: %v", unknownBehaviors)
 	}
 
 	if totalRules == 0 {
-		slog.Warn("No valid rules found in source", "input", filepath.ToSlash(src))
-		return nil
+		return fmt.Errorf("no valid rules found in source")
 	}
 
 	for _, mihomoBehavior := range []P.RuleBehavior{P.Domain, P.IPCIDR} {
@@ -78,8 +74,6 @@ func (m *Mihomo) Compile(src string, rawOutputPath string, rules map[Behavior][]
 		if err := m.convertLines(lines, dst, mihomoBehavior); err != nil {
 			return err
 		}
-
-		slog.Info("Generated ruleset", "input", filepath.ToSlash(src), "output", filepath.ToSlash(dst), "behavior", mihomoBehavior, "rules", len(lines))
 	}
 
 	return nil

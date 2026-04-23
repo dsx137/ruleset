@@ -23,7 +23,7 @@ const (
 type Parser func(line string) (Behavior, string, bool)
 
 type Compiler interface {
-	Compile(inputPath string, rawOutputPath string, rules map[Behavior][]string) error
+	Compile(rules map[Behavior][]string, rawOutputPath string) error
 }
 
 func ParseRules(inputPath string) (map[Behavior][]string, []string, error) {

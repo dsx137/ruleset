@@ -63,7 +63,7 @@ func Compile() error {
 				}
 
 				for _, cpl := range compilers {
-					if err := cpl.Compile(src, rawOutputPath, behaviorRules); err != nil {
+					if err := cpl.Compile(behaviorRules, rawOutputPath); err != nil {
 						return fmt.Errorf("compile %s: %w", filepath.ToSlash(rel), err)
 					}
 				}

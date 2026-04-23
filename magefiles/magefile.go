@@ -15,8 +15,11 @@ import (
 	"github.com/dsx137/ruleset/magefiles/internal/util"
 )
 
-func Compile() error {
+func init() {
 	slog.SetDefault(logging.New())
+}
+
+func Compile() error {
 	compilers := []compiler.Compiler{
 		compiler.NewMihomo(),
 	}
@@ -93,5 +96,13 @@ func Dump(path string) error {
 		}
 	}
 
+	return nil
+}
+
+func Clean() error {
+	if err := pipeline.CleanDist(); err != nil {
+		return err
+	}
+	slog.Info("Cleaned dist directory", "dist_dir", filepath.ToSlash(common.PathDist))
 	return nil
 }

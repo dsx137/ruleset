@@ -10,6 +10,14 @@ import (
 	"github.com/dsx137/ruleset/magefiles/internal/common"
 )
 
+func CleanDist() error {
+	if err := os.RemoveAll(common.PathDist); err != nil {
+		return fmt.Errorf("clean dist directory: %w", err)
+	}
+
+	return nil
+}
+
 func FreshDist() error {
 	if err := os.RemoveAll(common.PathDist); err != nil {
 		return fmt.Errorf("clean dist directory: %w", err)
